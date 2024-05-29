@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Document</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 p-5">
+  <div class="max-w-4xl mx-auto bg-white p-5 rounded shadow-md">
+    <div class="flex space-x-3 mb-5">
+      <input type="text" placeholder="Name of stuff" id="name" class="border rounded p-2 w-full" />
+      <input type="number" placeholder="Price of stuff" id="price" class="border rounded p-2 w-full" />
+      <select id="category" class="border rounded p-2 w-full">
+        <!-- Options will be dynamically populated -->
+      </select>
+      <button type="button" onclick="SaveStuff()" id="save" class="bg-blue-500 text-white px-4 py-2 rounded">Save</button>
+    </div>
+    <div class="flex space-x-3 mb-5">
+      <input type="text" placeholder="New Category" id="new-category" class="border rounded p-2 w-full" />
+      <button type="button" onclick="AddCategory()" class="bg-green-500 text-white px-4 py-2 rounded">Add Category</button>
+    </div>
+    <table class="w-full bg-white rounded shadow-md">
+      <thead>
+        <tr class="bg-gray-200">
+          <th class="border px-4 py-2">No.</th>
+          <th class="border px-4 py-2">Name</th>
+          <th class="border px-4 py-2">Category</th>
+          <th class="border px-4 py-2">Price</th>
+          <th class="border px-4 py-2">Action</th>
+        </tr>
+      </thead>
+      <tbody id="result">
+        <!-- Table rows will be dynamically populated -->
+      </tbody>
+      <tfoot>
+        <tr class="bg-gray-200">
+          <td class="border px-4 py-2" colspan="3">Total</td>
+          <td class="border px-4 py-2" id="total-price">$0</td>
+          <td class="border px-4 py-2"></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+  <script>
+    let categories = ['Furniture', 'Electronic'];
+
+    const PopulateCategories = () => {
+      const categorySelect = document.getElementById('category');
+      categorySelect.innerHTML = '';
+      categories.forEach(category => {
+        const option = document.createElement('option');
+        option.value = category;
+        option.text = category;
+        categorySelect.appendChild(option);
+      });
+    }
+
+    const GetStuff = async () => {
+      await axios.get('http://localhost:3000/stuff')
+        .then((response) => {
+          console.log(response.data);
+          const stuffs = response.data;
+          let bucket = '';
+          let totalPrice = 0;
+          stuffs.forEach((stuff, index) => {
+            bucket += `
+              <tr>
+                <td class="border px-4 py-2">${index + 1}</td>
+                <td class="border px-4 py-2">${stuff.name}</td>
+                <td class="border px-4 py-2">${stuff.category}</td>
+                <td class="border px-4 py-2">$${stuff.price}</td>
+                <td class="border px-4 py-2">
+                  <button type="button" onclick="EditStuff('${stuff.id}')" class="bg-yellow-500 text-white px-2 py-1 rounded">Edit</button>
+                  <button type="button" onclick="DeleteStuff('${stuff.id}')" class="bg-red-500 text-white px-2 py-1 rounded">Delete</button>
+                </td>
+              </tr>
+            `;
+            totalPrice += parseFloat(stuff.price);
+          });
+          document.getElementById('result').innerHTML = bucket;
+          document.getElementById('total-price').innerText = `$${parseInt(totalPrice)}`;
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    GetStuff();
+
+    const SaveStuff = async () => {
+      let name = document.getElementById('name').value;
+      let price = document.getElementById('price').value;
+      let category = document.getElementById('category').value;
+      await axios.post('http://localhost:3000/stuff', {
+        name: name,
+        price: price,
+        category: category,
+      })
+        .then((response) => {
+          console.log(response);
+          GetStuff();
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    const DeleteStuff = async (id) => {
+      const confirmVal = confirm('Apakah data akan dihapus?');
+      if (confirmVal) {
+        await axios.delete(`http://localhost:3000/stuff/${id}`)
+          .then((response) => {
+            console.log(response);
+            GetStuff();
+          })
+          .catch((error) => {
+            alert(error.message);
+          });
+      }
+    }
+
+    const EditStuff = async (id) => {
+      await axios.get(`http://localhost:3000/stuff/${id}`)
+        .then((response) => {
+          const stuff = response.data;
+          document.getElementById("name").value = stuff.name;
+          document.getElementById("price").value = stuff.price;
+          document.getElementById("category").value = stuff.category;
+          document.getElementById("save").innerText = "Update";
+          document.getElementById("save").setAttribute('onclick', `UpdateStuff('${id}')`);
+          console.log(response);
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    const UpdateStuff = async (id) => {
+      let name = document.getElementById('name').value;
+      let price = document.getElementById('price').value;
+      let category = document.getElementById('category').value;
+      await axios.patch(`http://localhost:3000/stuff/${id}`, {
+        name: name,
+        price: price,
+        category: category,
+      })
+        .then((response) => {
+          console.log(response);
+          document.getElementById("name").value = "";
+          document.getElementById("price").value = "";
+          document.getElementById("save").innerText = "Save";
+          document.getElementById("save").setAttribute('onclick', `SaveStuff()`);
+          GetStuff();
+        })
+        .catch((error) => {
+          alert(error.message);
+        });
+    }
+
+    const AddCategory = () => {
+      const newCategory = document.getElementById('new-category').value.trim();
+      if (newCategory && !categories.includes(newCategory)) {
+        categories.push(newCategory);
+        PopulateCategories();  // Populate categories immediately after adding a new category
+        document.getElementById('new-category').value = '';
+      } else {
+        alert('Category already exists or is invalid.');
+      }
+    }
+
+    // Populate categories on page load
+    PopulateCategories();
+  </script>
+</body>
+
+</html>

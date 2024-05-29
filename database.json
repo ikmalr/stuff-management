@@ -1,0 +1,28 @@
+{
+  "stuff": [
+    {
+      "id": "11e1",
+      "name": "Samsung a54",
+      "price": "300",
+      "category": "Electronic"
+    },
+    {
+      "id": "f118",
+      "name": "Iphone 13",
+      "price": "400",
+      "category": "Electronic"
+    },
+    {
+      "id": "47fc",
+      "name": "Lemari ",
+      "price": "200",
+      "category": "Furniture"
+    },
+    {
+      "id": "a695",
+      "name": "dancow",
+      "price": "400",
+      "category": "susu"
+    }
+  ]
+}
